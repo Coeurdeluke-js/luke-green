@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Efecto Matrix Formando Luke</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: black;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #matrix-canvas {
+            background-color: black;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* Media query para dispositivos móviles */
+        @media screen and (max-width: 600px) {
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()_+-=[]{}|;:,.<>?';
+        const lukeName = 'LUKE';
+        
+        // Función para calcular el tamaño de fuente responsive
+        function calculateFontSize() {
+            const baseFontSize = 20;
+            if (window.innerWidth <= 600) {
+                // Reducir ligeramente el tamaño para móviles
+                return Math.max(12, baseFontSize * 0.7);
+            }
+            return baseFontSize;
+        }
+
+        let fontSize = calculateFontSize();
+        const columns = canvas.width / fontSize;
+
+        // Letras más grandes usando más caracteres
+        const lukeTemplates = {
+            'L': [
+                {x: 0, y: 0}, {x: 0, y: 1}, {x: 0, y: 2}, {x: 0, y: 3}, {x: 0, y: 4}, {x: 0, y: 5}, {x: 0, y: 6},
+                {x: 1, y: 6}, {x: 2, y: 6}, {x: 3, y: 6}, {x: 4, y: 6}
+            ],
+            'U': [
+                {x: 0, y: 0}, {x: 0, y: 1}, {x: 0, y: 2}, {x: 0, y: 3}, {x: 0, y: 4}, {x: 0, y: 5}, {x: 0, y: 6},
+                {x: 1, y: 6}, {x: 2, y: 6}, {x: 3, y: 6}, {x: 4, y: 6},
+                {x: 4, y: 0}, {x: 4, y: 1}, {x: 4, y: 2}, {x: 4, y: 3}, {x: 4, y: 4}, {x: 4, y: 5}
+            ],
+            'K': [
+                {x: 0, y: 0}, {x: 0, y: 1}, {x: 0, y: 2}, {x: 0, y: 3}, {x: 0, y: 4}, {x: 0, y: 5}, {x: 0, y: 6},
+                {x: 1, y: 3}, {x: 2, y: 2}, {x: 2, y: 4},
+                {x: 3, y: 1}, {x: 3, y: 5},
+                {x: 4, y: 0}, {x: 4, y: 6}
+            ],
+            'E': [
+                {x: 0, y: 0}, {x: 0, y: 1}, {x: 0, y: 2}, {x: 0, y: 3}, {x: 0, y: 4}, {x: 0, y: 5}, {x: 0, y: 6},
+                {x: 1, y: 0}, {x: 2, y: 0}, {x: 3, y: 0}, {x: 4, y: 0},
+                {x: 1, y: 3}, {x: 2, y: 3}, {x: 3, y: 3}, {x: 4, y: 3},
+                {x: 1, y: 6}, {x: 2, y: 6}, {x: 3, y: 6}, {x: 4, y: 6}
+            ]
+        };
+
+        const rainDrops = [];
+        const letterPositions = [];
+        let frameCount = 0;
+
+        function initMatrix() {
+            // Recalcular tamaño de fuente
+            fontSize = calculateFontSize();
+
+            for (let x = 0; x < columns; x++) {
+                rainDrops[x] = 1;
+            }
+
+            const letterWidth = 5 * fontSize;
+            const letterHeight = 7 * fontSize;
+            const letterSpacing = fontSize;
+            const startX = (canvas.width - (lukeName.length * letterWidth + (lukeName.length - 1) * letterSpacing)) / 2;
+            const startY = (canvas.height - letterHeight) / 2;
+
+            letterPositions.length = 0;
+            lukeName.split('').forEach((letter, letterIndex) => {
+                const template = lukeTemplates[letter];
+                template.forEach(point => {
+                    letterPositions.push({
+                        x: startX + (letterIndex * (letterWidth + letterSpacing)) + (point.x * fontSize),
+                        y: startY + (point.y * fontSize),
+                        depth: Math.random() * 10,
+                        formed: false,
+                        character: null,
+                        brightness: 0,
+                        offset: {x: 0, y: 0}
+                    });
+                });
+            });
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = 'rgb(0, 255, 70)';
+            ctx.font = fontSize + 'px monospace';
+
+            // Caída de caracteres
+            for (let i = 0; i < rainDrops.length; i++) {
+                const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+                
+                if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    rainDrops[i] = 0;
+                }
+                rainDrops[i]++;
+            }
+
+            const mouseX = canvas.width / 2;
+            const mouseY = canvas.height / 2;
+            
+            // Formar letras de "Luke"
+            letterPositions.forEach(pos => {
+                if (!pos.formed) {
+                    if (Math.random() > 0.98) {
+                        pos.formed = true;
+                    }
+                }
+                
+                if (pos.formed) {
+                    pos.offset.x = (pos.x - mouseX) / (canvas.width / 4) * pos.depth;
+                    pos.offset.y = (pos.y - mouseY) / (canvas.height / 4) * pos.depth;
+
+                    if (frameCount % 20 === 0) {
+                        pos.character = characters.charAt(Math.floor(Math.random() * characters.length));
+                    }
+
+                    pos.brightness = Math.min(pos.brightness + 0.1, 1);
+                    
+                    ctx.save();
+                    
+                    for (let i = 0; i < 3; i++) {
+                        ctx.shadowColor = `rgba(0, 255, 70, ${0.3 / (i + 1)})`;
+                        ctx.shadowBlur = 10 * (i + 1);
+                        
+                        ctx.fillStyle = `rgba(0, 255, 70, ${pos.brightness / (i + 1)})`;
+                        
+                        ctx.fillText(
+                            pos.character, 
+                            pos.x + pos.offset.x * (i + 1), 
+                            pos.y + pos.offset.y * (i + 1)
+                        );
+                    }
+                    
+                    ctx.restore();
+                }
+            });
+
+            frameCount++;
+        }
+
+        function animateMatrix() {
+            drawMatrix();
+            requestAnimationFrame(animateMatrix);
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initMatrix();
+        });
+
+        initMatrix();
+        animateMatrix();
+    </script>
+</body>
+</html>
